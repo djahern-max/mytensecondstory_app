@@ -1,1 +1,23 @@
+# Credentials
 google-credentials.json
+
+# Generated content
+api_backgrounds/*.jpg
+static/*.jpg
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+
+# System files
+.DS_Store
+*.log
+
+# Large video files (optional)
+*.mp4
+*.webm
+
+# Environment
+.env
