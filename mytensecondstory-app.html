@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyTenSecondStory - AI Video Creation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .video-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .controls-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        #videoElement, #canvasElement {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        #videoElement {
+            transform: scaleX(-1);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.recording {
+            background: linear-gradient(45deg, #ff4757, #ff3742);
+            animation: pulse 1s infinite;
+        }
+
+        .prompt-section {
+            margin-bottom: 20px;
+        }
+
+        .prompt-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        #backgroundPrompt {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+
+        #backgroundPrompt::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        #backgroundPrompt:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .quick-prompts {
+            margin-bottom: 20px;
+        }
+
+        .quick-prompts h4 {
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .prompt-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .prompt-chip {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .prompt-chip:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+
+        .prompt-chip.selected {
+            background: #4ecdc4;
+            border-color: #4ecdc4;
+        }
+
+        .background-preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .background-preview h4 {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .background-preview img {
+            width: 100%;
+            max-width: 200px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin-bottom: 15px;
+        }
+
+        .generating {
+            background: linear-gradient(45deg, #f39c12, #e67e22) !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .status {
+            text-align: center;
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            font-size: 14px;
+        }
+
+        .recording-controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin: 10px 0;
+        }
+
+        .download-section {
+            text-align: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid #4ecdc4;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+        }
+
+        .connection-status.connected {
+            background: rgba(34, 197, 94, 0.8);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(239, 68, 68, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">🔄 Connecting...</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🎬 MyTenSecondStory</h1>
+            <p>Create professional intro videos with custom AI backgrounds</p>
+        </div>
+
+        <div id="loadingScreen" class="loading">
+            <div class="spinner"></div>
+            <h3>Initializing AI Background Generator...</h3>
+            <p>Testing connection to backend server</p>
+        </div>
+
+        <div id="mainApp" style="display: none;">
+            <div class="main-content">
+                <div class="video-section">
+                    <div class="video-container">
+                        <video id="videoElement" autoplay muted playsinline></video>
+                        <canvas id="canvasElement" style="display: none;"></canvas>
+                    </div>
+                    
+                    <div class="recording-controls">
+                        <button id="startBtn" class="btn">🎥 Start Camera</button>
+                        <button id="recordBtn" class="btn" disabled>⏺️ Start Recording</button>
+                        <button id="stopBtn" class="btn" disabled>⏹️ Stop Recording</button>
+                        <div id="timer" class="timer" style="display: none;">00:00</div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <div class="prompt-section">
+                        <h3>🎨 AI Background Generator</h3>
+                        <textarea id="backgroundPrompt" 
+                                  placeholder="Describe your ideal background...
+
+Examples:
+• Modern office with city skyline view
+• Cozy home library with bookshelves  
+• Professional medical consultation room
+• Tech startup workspace with LED lights
+• Elegant boardroom with conference table"></textarea>
+                        <button id="generateBgBtn" class="btn">✨ Generate Background</button>
+                    </div>
+                    
+                    <div class="quick-prompts">
+                        <h4>🚀 Quick Options:</h4>
+                        <div class="prompt-chips">
+                            <span class="prompt-chip" data-prompt="modern professional office with glass windows and city skyline">🏢 Office</span>
+                            <span class="prompt-chip" data-prompt="cozy home office with bookshelves and warm lighting">🏠 Home</span>
+                            <span class="prompt-chip" data-prompt="futuristic tech workspace with LED lighting">💻 Tech</span>
+                            <span class="prompt-chip" data-prompt="medical clinic with clean professional environment">🏥 Medical</span>
+                            <span class="prompt-chip" data-prompt="elegant boardroom with conference table">📊 Boardroom</span>
+                            <span class="prompt-chip" data-prompt="creative studio with colorful modern design">🎨 Creative</span>
+                        </div>
+                    </div>
+
+                    <div id="backgroundPreview" class="background-preview" style="display: none;">
+                        <h4>🖼️ Generated Background:</h4>
+                        <img id="previewImage" alt="Generated background preview">
+                        <button id="useBgBtn" class="btn">✅ Use This Background</button>
+                    </div>
+
+                    <div class="status" id="status">
+                        🤖 Generate a custom background to begin
+                    </div>
+
+                    <button id="uploadBgBtn" class="btn">📁 Upload Custom Background</button>
+                    <input type="file" id="bgUpload" accept="image/*" style="display: none;">
+                </div>
+            </div>
+
+            <div id="downloadSection" class="download-section" style="display: none;">
+                <h3>🎉 Recording Complete!</h3>
+                <p>Your professional intro video is ready</p>
+                <button id="downloadBtn" class="btn">💾 Download Video</button>
+                <button id="newRecordingBtn" class="btn">🔄 Record Another</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MyTenSecondStory {
+            constructor() {
+                this.video = document.getElementById('videoElement');
+                this.canvas = document.getElementById('canvasElement');
+                this.ctx = this.canvas.getContext('2d');
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+                this.isRecording = false;
+                this.stream = null;
+                this.backgroundImage = null;
+                this.animationId = null;
+                this.startTime = null;
+                this.timerInterval = null;
+                this.generatedBackgroundUrl = null;
+                this.backendUrl = 'http://localhost:5000';
+                
+                this.initializeEvents();
+                this.checkBackendConnection();
+            }
+
+            async checkBackendConnection() {
+                try {
+                    const response = await fetch(`${this.backendUrl}/api/health`);
+                    if (response.ok) {
+                        document.getElementById('connectionStatus').textContent = '✅ Connected';
+                        document.getElementById('connectionStatus').className = 'connection-status connected';
+                        
+                        document.getElementById('loadingScreen').style.display = 'none';
+                        document.getElementById('mainApp').style.display = 'block';
+                        
+                        this.updateStatus('🤖 Ready! Generate a background to start creating videos');
+                    } else {
+                        throw new Error('Backend not responding');
+                    }
+                } catch (error) {
+                    console.error('Backend connection failed:', error);
+                    document.getElementById('connectionStatus').textContent = '❌ Backend Offline';
+                    document.getElementById('connectionStatus').className = 'connection-status disconnected';
+                    
+                    document.getElementById('loadingScreen').innerHTML = `
+                        <h3>❌ Cannot Connect to Backend</h3>
+                        <p>Please ensure the Python backend server is running:</p>
+                        <code>python3 app_launcher.py</code>
+                        <br><br>
+                        <button onclick="location.reload()" class="btn">🔄 Retry Connection</button>
+                    `;
+                }
+            }
+
+            initializeEvents() {
+                document.getElementById('startBtn').addEventListener('click', () => this.startCamera());
+                document.getElementById('recordBtn').addEventListener('click', () => this.startRecording());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stopRecording());
+                document.getElementById('generateBgBtn').addEventListener('click', () => this.generateBackground());
+                document.getElementById('useBgBtn').addEventListener('click', () => this.useGeneratedBackground());
+                document.getElementById('uploadBgBtn').addEventListener('click', () => {
+                    document.getElementById('bgUpload').click();
+                });
+                document.getElementById('bgUpload').addEventListener('change', (e) => this.handleBgUpload(e));
+                document.getElementById('downloadBtn').addEventListener('click', () => this.downloadVideo());
+                document.getElementById('newRecordingBtn').addEventListener('click', () => this.startNewRecording());
+
+                document.querySelectorAll('.prompt-chip').forEach(chip => {
+                    chip.addEventListener('click', (e) => this.selectPromptChip(e.target));
+                });
+            }
+
+            selectPromptChip(chip) {
+                document.querySelectorAll('.prompt-chip').forEach(c => c.classList.remove('selected'));
+                chip.classList.add('selected');
+                document.getElementById('backgroundPrompt').value = chip.dataset.prompt;
+            }
+
+            async generateBackground() {
+                const prompt = document.getElementById('backgroundPrompt').value.trim();
+                
+                if (!prompt) {
+                    this.updateStatus('❌ Please enter a background description');
+                    return;
+                }
+
+                const generateBtn = document.getElementById('generateBgBtn');
+                const originalText = generateBtn.textContent;
+                
+                try {
+                    generateBtn.textContent = '🎨 Generating...';
+                    generateBtn.classList.add('generating');
+                    generateBtn.disabled = true;
+                    this.updateStatus('🎨 Creating your custom background with AI... (this may take 10-30 seconds)');
+
+                    const response = await fetch(`${this.backendUrl}/api/generate-background`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt: prompt, style: 'professional' })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const previewImg = document.getElementById('previewImage');
+                        previewImg.src = result.imageUrl;
+                        document.getElementById('backgroundPreview').style.display = 'block';
+                        
+                        this.generatedBackgroundUrl = result.imageUrl;
+                        this.updateStatus('✅ Background generated! Click "Use This Background" to continue');
+                    } else {
+                        throw new Error(result.error || 'Generation failed');
+                    }
+                    
+                } catch (error) {
+                    console.error('Background generation failed:', error);
+                    this.updateStatus('❌ Generation failed. Check that backend server is running');
+                } finally {
+                    generateBtn.textContent = originalText;
+                    generateBtn.classList.remove('generating');
+                    generateBtn.disabled = false;
+                }
+            }
+
+            useGeneratedBackground() {
+                if (this.generatedBackgroundUrl) {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        this.backgroundImage = img;
+                        this.updateStatus('✅ Background loaded! Click "Start Camera" to begin recording');
+                    };
+                    img.onerror = () => {
+                        this.updateStatus('❌ Failed to load background image');
+                    };
+                    img.src = this.generatedBackgroundUrl;
+                }
+            }
+
+            async startCamera() {
+                try {
+                    this.updateStatus('📹 Starting camera...');
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { width: 1280, height: 720, facingMode: 'user' },
+                        audio: true
+                    });
+
+                    this.video.srcObject = this.stream;
+                    
+                    this.video.onloadedmetadata = () => {
+                        this.canvas.width = this.video.videoWidth;
+                        this.canvas.height = this.video.videoHeight;
+                        this.startProcessing();
+                        
+                        document.getElementById('startBtn').disabled = true;
+                        document.getElementById('recordBtn').disabled = false;
+                        this.updateStatus('✅ Camera ready! Position yourself and click Record');
+                    };
+                } catch (error) {
+                    console.error('Camera access failed:', error);
+                    this.updateStatus('❌ Camera access denied. Please allow camera permissions and try again');
+                }
+            }
+
+            startProcessing() {
+                const processFrame = () => {
+                    if (this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
+                        this.processVideoFrame();
+                    }
+                    this.animationId = requestAnimationFrame(processFrame);
+                };
+                processFrame();
+            }
+
+            processVideoFrame() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw background
+                if (this.backgroundImage) {
+                    this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
+                } else {
+                    this.drawDefaultBackground();
+                }
+                
+                // Mirror and draw person (simplified circular mask for demo)
+                this.ctx.save();
+                this.ctx.scale(-1, 1);
+                this.ctx.translate(-this.canvas.width, 0);
+                
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                const radius = Math.min(this.canvas.width, this.canvas.height) * 0.35;
+                
+                this.ctx.beginPath();
+                this.ctx.arc(-centerX, centerY, radius, 0, 2 * Math.PI);
+                this.ctx.clip();
+                
+                this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                
+                this.ctx.restore();
+                
+                // Show processed canvas
+                this.canvas.style.display = 'block';
+                this.video.style.display = 'none';
+            }
+
+            drawDefaultBackground() {
+                const gradient = this.ctx.createLinearGradient(0, 0, this.canvas.width, this.canvas.height);
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(1, '#764ba2');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            handleBgUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            this.backgroundImage = img;
+                            this.updateStatus('✅ Custom background uploaded and ready');
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+
+            async startRecording() {
+                try {
+                    const canvasStream = this.canvas.captureStream(30);
+                    const audioTrack = this.stream.getAudioTracks()[0];
+                    if (audioTrack) {
+                        canvasStream.addTrack(audioTrack);
+                    }
+
+                    this.mediaRecorder = new MediaRecorder(canvasStream, {
+                        mimeType: 'video/webm;codecs=vp9'
+                    });
+
+                    this.recordedChunks = [];
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        this.recordedChunks.push(event.data);
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+                        this.handleRecordingComplete();
+                    };
+
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    this.startTime = Date.now();
+                    
+                    document.getElementById('recordBtn').disabled = true;
+                    document.getElementById('stopBtn').disabled = false;
+                    document.getElementById('recordBtn').classList.add('recording');
+                    document.getElementById('timer').style.display = 'block';
+                    
+                    this.startTimer();
+                    this.updateStatus('🔴 Recording in progress... Stay centered in frame!');
+
+                    // Auto-stop after 10 seconds
+                    setTimeout(() => {
+                        if (this.isRecording) {
+                            this.stopRecording();
+                        }
+                    }, 10000);
+
+                } catch (error) {
+                    console.error('Recording failed:', error);
+                    this.updateStatus('❌ Recording failed. Please try again');
+                }
+            }
+
+            stopRecording() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.isRecording = false;
+                    this.stopTimer();
+                    
+                    document.getElementById('recordBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    document.getElementById('recordBtn').classList.remove('recording');
+                    document.getElementById('timer').style.display = 'none';
+                    
+                    this.updateStatus('✅ Processing your video...');
+                }
+            }
+
+            startTimer() {
+                this.timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    document.getElementById('timer').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+
+            stopTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+            }
+
+            handleRecordingComplete() {
+                const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+                this.recordedBlob = blob;
+                
+                document.getElementById('downloadSection').style.display = 'block';
+                this.updateStatus('🎉 Your professional intro video is ready to download!');
+            }
+
+            downloadVideo() {
+                if (this.recordedBlob) {
+                    const url = URL.createObjectURL(this.recordedBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `mytensecondstory-${Date.now()}.webm`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+            }
+
+            startNewRecording() {
+                document.getElementById('downloadSection').style.display = 'none';
+                document.getElementById('recordBtn').disabled = false;
+                this.updateStatus('📹 Ready for another recording!');
+            }
+
+            updateStatus(message) {
+                document.getElementById('status').textContent = message;
+            }
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            new MyTenSecondStory();
+        });
+    </script>
+</body>
+</html>
