@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -71,10 +72,11 @@
             margin: 0 auto;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
-        #videoElement, #canvasElement {
+        #videoElement,
+        #canvasElement {
             width: 100%;
             height: auto;
             display: block;
@@ -127,9 +129,9 @@
             width: 100%;
             min-height: 100px;
             padding: 15px;
-            border: 2px solid rgba(255,255,255,0.2);
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             color: white;
             font-size: 14px;
             font-family: inherit;
@@ -138,13 +140,13 @@
         }
 
         #backgroundPrompt::placeholder {
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.7);
         }
 
         #backgroundPrompt:focus {
             outline: none;
             border-color: #4ecdc4;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .quick-prompts {
@@ -164,7 +166,7 @@
         }
 
         .prompt-chip {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             padding: 6px 10px;
             border-radius: 15px;
             font-size: 11px;
@@ -174,7 +176,7 @@
         }
 
         .prompt-chip:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.3);
             transform: translateY(-1px);
         }
 
@@ -197,7 +199,7 @@
             width: 100%;
             max-width: 200px;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             margin-bottom: 15px;
         }
 
@@ -207,9 +209,17 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .status {
@@ -217,7 +227,7 @@
             margin: 15px 0;
             padding: 12px;
             border-radius: 10px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             font-size: 14px;
         }
 
@@ -237,7 +247,7 @@
             text-align: center;
             margin-top: 20px;
             padding: 20px;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
             backdrop-filter: blur(10px);
         }
@@ -246,7 +256,7 @@
             .main-content {
                 grid-template-columns: 1fr;
             }
-            
+
             .header h1 {
                 font-size: 2rem;
             }
@@ -258,7 +268,7 @@
         }
 
         .spinner {
-            border: 4px solid rgba(255,255,255,0.3);
+            border: 4px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top: 4px solid #4ecdc4;
             width: 40px;
@@ -268,8 +278,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .connection-status {
@@ -279,7 +294,7 @@
             padding: 8px 12px;
             border-radius: 20px;
             font-size: 12px;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             z-index: 1000;
         }
 
@@ -292,9 +307,10 @@
         }
     </style>
 </head>
+
 <body>
     <div class="connection-status" id="connectionStatus">🔄 Connecting...</div>
-    
+
     <div class="container">
         <div class="header">
             <h1>🎬 MyTenSecondStory</h1>
@@ -314,7 +330,7 @@
                         <video id="videoElement" autoplay muted playsinline></video>
                         <canvas id="canvasElement" style="display: none;"></canvas>
                     </div>
-                    
+
                     <div class="recording-controls">
                         <button id="startBtn" class="btn">🎥 Start Camera</button>
                         <button id="recordBtn" class="btn" disabled>⏺️ Start Recording</button>
@@ -326,8 +342,7 @@
                 <div class="controls-section">
                     <div class="prompt-section">
                         <h3>🎨 AI Background Generator</h3>
-                        <textarea id="backgroundPrompt" 
-                                  placeholder="Describe your ideal background...
+                        <textarea id="backgroundPrompt" placeholder="Describe your ideal background...
 
 Examples:
 • Modern office with city skyline view
@@ -337,16 +352,23 @@ Examples:
 • Elegant boardroom with conference table"></textarea>
                         <button id="generateBgBtn" class="btn">✨ Generate Background</button>
                     </div>
-                    
+
                     <div class="quick-prompts">
                         <h4>🚀 Quick Options:</h4>
                         <div class="prompt-chips">
-                            <span class="prompt-chip" data-prompt="modern professional office with glass windows and city skyline">🏢 Office</span>
-                            <span class="prompt-chip" data-prompt="cozy home office with bookshelves and warm lighting">🏠 Home</span>
-                            <span class="prompt-chip" data-prompt="futuristic tech workspace with LED lighting">💻 Tech</span>
-                            <span class="prompt-chip" data-prompt="medical clinic with clean professional environment">🏥 Medical</span>
-                            <span class="prompt-chip" data-prompt="elegant boardroom with conference table">📊 Boardroom</span>
-                            <span class="prompt-chip" data-prompt="creative studio with colorful modern design">🎨 Creative</span>
+                            <span class="prompt-chip"
+                                data-prompt="modern professional office with glass windows and city skyline">🏢
+                                Office</span>
+                            <span class="prompt-chip"
+                                data-prompt="cozy home office with bookshelves and warm lighting">🏠 Home</span>
+                            <span class="prompt-chip" data-prompt="futuristic tech workspace with LED lighting">💻
+                                Tech</span>
+                            <span class="prompt-chip"
+                                data-prompt="medical clinic with clean professional environment">🏥 Medical</span>
+                            <span class="prompt-chip" data-prompt="elegant boardroom with conference table">📊
+                                Boardroom</span>
+                            <span class="prompt-chip" data-prompt="creative studio with colorful modern design">🎨
+                                Creative</span>
                         </div>
                     </div>
 
@@ -374,6 +396,7 @@ Examples:
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js"></script>
     <script>
         class MyTenSecondStory {
             constructor() {
@@ -390,9 +413,47 @@ Examples:
                 this.timerInterval = null;
                 this.generatedBackgroundUrl = null;
                 this.backendUrl = 'http://localhost:5000';
-                
+                this.selfieSegmentation = null;
+                this.isProcessingFrame = false;
+
                 this.initializeEvents();
                 this.checkBackendConnection();
+                this.initializeSelfieSegmentation();
+            }
+
+            async initializeSelfieSegmentation() {
+                try {
+                    console.log('Trying to initialize MediaPipe...');
+
+                    // Check if SelfieSegmentation is available
+                    if (typeof SelfieSegmentation === 'undefined') {
+                        throw new Error('MediaPipe SelfieSegmentation not loaded');
+                    }
+
+                    this.selfieSegmentation = new SelfieSegmentation({
+                        locateFile: (file) => {
+                            return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
+                        }
+                    });
+
+                    this.selfieSegmentation.setOptions({
+                        modelSelection: 1,
+                        selfieMode: true,
+                    });
+
+                    this.selfieSegmentation.onResults((results) => {
+                        this.drawResults(results);
+                    });
+
+                    console.log('✅ MediaPipe initialized successfully');
+                    this.updateStatus('🤖 MediaPipe person detection ready!');
+
+                } catch (error) {
+                    console.error('MediaPipe failed:', error);
+                    console.log('🔄 Using fallback color-based background removal');
+                    this.selfieSegmentation = null;
+                    this.updateStatus('🔄 Using smart background detection (fallback mode)');
+                }
             }
 
             async checkBackendConnection() {
@@ -401,10 +462,10 @@ Examples:
                     if (response.ok) {
                         document.getElementById('connectionStatus').textContent = '✅ Connected';
                         document.getElementById('connectionStatus').className = 'connection-status connected';
-                        
+
                         document.getElementById('loadingScreen').style.display = 'none';
                         document.getElementById('mainApp').style.display = 'block';
-                        
+
                         this.updateStatus('🤖 Ready! Generate a background to start creating videos');
                     } else {
                         throw new Error('Backend not responding');
@@ -413,7 +474,7 @@ Examples:
                     console.error('Backend connection failed:', error);
                     document.getElementById('connectionStatus').textContent = '❌ Backend Offline';
                     document.getElementById('connectionStatus').className = 'connection-status disconnected';
-                    
+
                     document.getElementById('loadingScreen').innerHTML = `
                         <h3>❌ Cannot Connect to Backend</h3>
                         <p>Please ensure the Python backend server is running:</p>
@@ -450,7 +511,7 @@ Examples:
 
             async generateBackground() {
                 const prompt = document.getElementById('backgroundPrompt').value.trim();
-                
+
                 if (!prompt) {
                     this.updateStatus('❌ Please enter a background description');
                     return;
@@ -458,7 +519,7 @@ Examples:
 
                 const generateBtn = document.getElementById('generateBgBtn');
                 const originalText = generateBtn.textContent;
-                
+
                 try {
                     generateBtn.textContent = '🎨 Generating...';
                     generateBtn.classList.add('generating');
@@ -470,20 +531,20 @@ Examples:
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ prompt: prompt, style: 'professional' })
                     });
-                    
+
                     const result = await response.json();
-                    
+
                     if (result.success) {
                         const previewImg = document.getElementById('previewImage');
                         previewImg.src = result.imageUrl;
                         document.getElementById('backgroundPreview').style.display = 'block';
-                        
+
                         this.generatedBackgroundUrl = result.imageUrl;
                         this.updateStatus('✅ Background generated! Click "Use This Background" to continue');
                     } else {
                         throw new Error(result.error || 'Generation failed');
                     }
-                    
+
                 } catch (error) {
                     console.error('Background generation failed:', error);
                     this.updateStatus('❌ Generation failed. Check that backend server is running');
@@ -518,15 +579,15 @@ Examples:
                     });
 
                     this.video.srcObject = this.stream;
-                    
+
                     this.video.onloadedmetadata = () => {
                         this.canvas.width = this.video.videoWidth;
                         this.canvas.height = this.video.videoHeight;
                         this.startProcessing();
-                        
+
                         document.getElementById('startBtn').disabled = true;
                         document.getElementById('recordBtn').disabled = false;
-                        this.updateStatus('✅ Camera ready! Position yourself and click Record');
+                        this.updateStatus('✅ Camera ready! You should see yourself with the background');
                     };
                 } catch (error) {
                     console.error('Camera access failed:', error);
@@ -535,45 +596,234 @@ Examples:
             }
 
             startProcessing() {
-                const processFrame = () => {
-                    if (this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
-                        this.processVideoFrame();
+                const processFrame = async () => {
+                    if (this.video.readyState === this.video.HAVE_ENOUGH_DATA && !this.isProcessingFrame) {
+                        this.isProcessingFrame = true;
+
+                        if (this.selfieSegmentation) {
+                            try {
+                                // Send frame to MediaPipe for processing
+                                await this.selfieSegmentation.send({ imageData: this.video });
+                            } catch (error) {
+                                console.error('MediaPipe processing failed:', error);
+                                // Fall back to basic processing if MediaPipe fails
+                                this.processVideoFrameBasic();
+                            }
+                        } else {
+                            // Use smart background removal if MediaPipe not available
+                            this.processVideoFrameBasic();
+                        }
+
+                        this.isProcessingFrame = false;
                     }
                     this.animationId = requestAnimationFrame(processFrame);
                 };
                 processFrame();
             }
 
-            processVideoFrame() {
+            drawResults(results) {
+                console.log('MediaPipe results received:', results);
+
+                // Clear canvas
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                
-                // Draw background
+
+                // Draw background first
                 if (this.backgroundImage) {
                     this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
                 } else {
                     this.drawDefaultBackground();
                 }
-                
-                // Mirror and draw person (simplified circular mask for demo)
-                this.ctx.save();
-                this.ctx.scale(-1, 1);
-                this.ctx.translate(-this.canvas.width, 0);
-                
-                const centerX = this.canvas.width / 2;
-                const centerY = this.canvas.height / 2;
-                const radius = Math.min(this.canvas.width, this.canvas.height) * 0.35;
-                
-                this.ctx.beginPath();
-                this.ctx.arc(-centerX, centerY, radius, 0, 2 * Math.PI);
-                this.ctx.clip();
-                
-                this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
-                
-                this.ctx.restore();
-                
-                // Show processed canvas
+
+                // Check if we have segmentation data
+                if (!results.segmentationMask) {
+                    console.log('No segmentation mask, falling back to basic processing');
+                    this.processVideoFrameBasic();
+                    return;
+                }
+
+                // Create temporary canvas for processing
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = this.canvas.width;
+                tempCanvas.height = this.canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+
+                // Draw video frame (mirrored)
+                tempCtx.save();
+                tempCtx.scale(-1, 1);
+                tempCtx.translate(-tempCanvas.width, 0);
+                tempCtx.drawImage(this.video, 0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.restore();
+
+                // Apply MediaPipe segmentation mask
+                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const data = imageData.data;
+                const mask = results.segmentationMask;
+
+                console.log('Applying segmentation mask, mask length:', mask.length, 'image data length:', data.length);
+
+                // Process each pixel using the segmentation mask
+                const maskWidth = results.segmentationMask.width || tempCanvas.width;
+                const maskHeight = results.segmentationMask.height || tempCanvas.height;
+
+                for (let y = 0; y < tempCanvas.height; y++) {
+                    for (let x = 0; x < tempCanvas.width; x++) {
+                        const pixelIndex = y * tempCanvas.width + x;
+                        const imageIndex = pixelIndex * 4;
+
+                        // Scale mask coordinates if needed
+                        const maskX = Math.floor((x / tempCanvas.width) * maskWidth);
+                        const maskY = Math.floor((y / tempCanvas.height) * maskHeight);
+                        const maskIndex = maskY * maskWidth + maskX;
+
+                        // Get mask value (0 = background, 1 = person)
+                        const maskValue = mask[maskIndex] || 0;
+
+                        // If mask value is low (background), make pixel transparent
+                        if (maskValue < 0.5) {
+                            data[imageIndex + 3] = 0; // Set alpha to 0 (transparent)
+                        }
+                    }
+                }
+
+                // Apply the processed image data back
+                tempCtx.putImageData(imageData, 0, 0);
+
+                // Draw the person (with background removed) onto the main canvas
+                this.ctx.drawImage(tempCanvas, 0, 0);
+
+                // Show the processed canvas
                 this.canvas.style.display = 'block';
                 this.video.style.display = 'none';
+
+                console.log('MediaPipe processing complete');
+            }
+
+            processVideoFrameBasic() {
+                // Smart background removal using color analysis
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw background first
+                if (this.backgroundImage) {
+                    this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
+                } else {
+                    this.drawDefaultBackground();
+                }
+
+                // Create temporary canvas for processing
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = this.canvas.width;
+                tempCanvas.height = this.canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+
+                // Draw mirrored video
+                tempCtx.save();
+                tempCtx.scale(-1, 1);
+                tempCtx.translate(-tempCanvas.width, 0);
+                tempCtx.drawImage(this.video, 0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.restore();
+
+                // Get image data for smart processing
+                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const data = imageData.data;
+
+                // Smart background removal - detect person vs background
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+
+                    const pixelIndex = i / 4;
+                    const x = pixelIndex % tempCanvas.width;
+                    const y = Math.floor(pixelIndex / tempCanvas.width);
+
+                    // Check if this looks like a person (skin tones, clothing)
+                    const isPerson = this.isPersonPixel(r, g, b, x, y, tempCanvas.width, tempCanvas.height);
+
+                    if (!isPerson) {
+                        // Make background pixels transparent
+                        data[i + 3] = 0; // Alpha = 0 (transparent)
+                    }
+                }
+
+                // Apply the processed data
+                tempCtx.putImageData(imageData, 0, 0);
+
+                // Draw the person (without background) onto main canvas
+                this.ctx.drawImage(tempCanvas, 0, 0);
+
+                this.canvas.style.display = 'block';
+                this.video.style.display = 'none';
+            }
+
+            isPersonPixel(r, g, b, x, y, width, height) {
+                // Multiple detection methods
+
+                // 1. Skin tone detection
+                const isSkin = this.isSkinTone(r, g, b);
+
+                // 2. Common clothing colors
+                const isClothing = this.isClothingColor(r, g, b);
+
+                // 3. Center area weighting (person usually in center)
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                const maxDistance = Math.min(width, height) * 0.4;
+                const isInCenterArea = distanceFromCenter <= maxDistance;
+
+                // 4. Hair colors
+                const isHair = this.isHairColor(r, g, b);
+
+                // Combine all detection methods
+                return (isSkin || isClothing || isHair) && isInCenterArea;
+            }
+
+            isSkinTone(r, g, b) {
+                // Enhanced skin tone detection
+                return (
+                    (r > 95 && g > 40 && b > 20) &&
+                    (Math.max(r, g, b) - Math.min(r, g, b) > 15) &&
+                    (Math.abs(r - g) > 15) &&
+                    (r > g && r > b)
+                );
+            }
+
+            isClothingColor(r, g, b) {
+                // Detect common clothing colors
+                const gray = (r + g + b) / 3;
+
+                // Gray clothing (like your shirt)
+                if (Math.abs(r - gray) < 30 && Math.abs(g - gray) < 30 && Math.abs(b - gray) < 30) {
+                    return gray > 50 && gray < 200; // Not pure black or white
+                }
+
+                // Blue clothing
+                if (b > r + 20 && b > g + 20) {
+                    return true;
+                }
+
+                // Dark clothing
+                if (gray < 80) {
+                    return true;
+                }
+
+                return false;
+            }
+
+            isHairColor(r, g, b) {
+                // Detect hair colors (brown, black, blonde, etc.)
+                const avg = (r + g + b) / 3;
+
+                // Dark hair
+                if (avg < 70) return true;
+
+                // Brown hair
+                if (r > 100 && r > g && r > b && g > 50) return true;
+
+                // Blonde hair
+                if (r > 150 && g > 120 && b > 80) return true;
+
+                return false;
             }
 
             drawDefaultBackground() {
@@ -624,12 +874,12 @@ Examples:
                     this.mediaRecorder.start();
                     this.isRecording = true;
                     this.startTime = Date.now();
-                    
+
                     document.getElementById('recordBtn').disabled = true;
                     document.getElementById('stopBtn').disabled = false;
                     document.getElementById('recordBtn').classList.add('recording');
                     document.getElementById('timer').style.display = 'block';
-                    
+
                     this.startTimer();
                     this.updateStatus('🔴 Recording in progress... Stay centered in frame!');
 
@@ -651,12 +901,12 @@ Examples:
                     this.mediaRecorder.stop();
                     this.isRecording = false;
                     this.stopTimer();
-                    
+
                     document.getElementById('recordBtn').disabled = false;
                     document.getElementById('stopBtn').disabled = true;
                     document.getElementById('recordBtn').classList.remove('recording');
                     document.getElementById('timer').style.display = 'none';
-                    
+
                     this.updateStatus('✅ Processing your video...');
                 }
             }
@@ -666,7 +916,7 @@ Examples:
                     const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
                     const minutes = Math.floor(elapsed / 60);
                     const seconds = elapsed % 60;
-                    document.getElementById('timer').textContent = 
+                    document.getElementById('timer').textContent =
                         `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 }, 1000);
             }
@@ -681,7 +931,7 @@ Examples:
             handleRecordingComplete() {
                 const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
                 this.recordedBlob = blob;
-                
+
                 document.getElementById('downloadSection').style.display = 'block';
                 this.updateStatus('🎉 Your professional intro video is ready to download!');
             }
@@ -716,4 +966,5 @@ Examples:
         });
     </script>
 </body>
+
 </html>
