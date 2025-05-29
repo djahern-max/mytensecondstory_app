@@ -252,6 +252,63 @@
             backdrop-filter: blur(10px);
         }
 
+        .performance-info {
+            margin: 10px 0;
+            font-size: 12px;
+            opacity: 0.8;
+            text-align: center;
+        }
+
+        .segmentation-controls {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .segmentation-controls h4 {
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .slider-container {
+            margin: 10px 0;
+        }
+
+        .slider-container label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+            border: none;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -331,6 +388,10 @@
                         <canvas id="canvasElement" style="display: none;"></canvas>
                     </div>
 
+                    <div class="performance-info" id="performanceInfo">
+                        FPS: <span id="fpsCounter">0</span> | Processing: <span id="processTime">0ms</span>
+                    </div>
+
                     <div class="recording-controls">
                         <button id="startBtn" class="btn">🎥 Start Camera</button>
                         <button id="recordBtn" class="btn" disabled>⏺️ Start Recording</button>
@@ -372,6 +433,20 @@ Examples:
                         </div>
                     </div>
 
+                    <div class="segmentation-controls">
+                        <h4>🎭 Background Removal (Optimized)</h4>
+                        <div class="slider-container">
+                            <label for="thresholdSlider">Sensitivity: <span id="thresholdValue">0.3</span></label>
+                            <input type="range" id="thresholdSlider" class="slider" min="0.1" max="0.7" step="0.05"
+                                value="0.3">
+                        </div>
+                        <div class="slider-container">
+                            <label for="qualitySlider">Quality vs Speed: <span id="qualityValue">2</span></label>
+                            <input type="range" id="qualitySlider" class="slider" min="1" max="4" step="1" value="2">
+                        </div>
+                        <button id="resetBgBtn" class="btn">🔄 Reset Background</button>
+                    </div>
+
                     <div id="backgroundPreview" class="background-preview" style="display: none;">
                         <h4>🖼️ Generated Background:</h4>
                         <img id="previewImage" alt="Generated background preview">
@@ -396,7 +471,6 @@ Examples:
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js"></script>
     <script>
         class MyTenSecondStory {
             constructor() {
@@ -413,47 +487,92 @@ Examples:
                 this.timerInterval = null;
                 this.generatedBackgroundUrl = null;
                 this.backendUrl = 'http://localhost:5000';
-                this.selfieSegmentation = null;
-                this.isProcessingFrame = false;
+
+                // Optimized processing settings
+                this.threshold = 0.3;
+                this.processingQuality = 2;
+                this.downsampleFactor = 2; // Process at lower resolution for speed
+                this.frameSkip = 0; // Skip frames for performance
+                this.currentFrame = 0;
+
+                // Performance monitoring
+                this.fps = 0;
+                this.frameCount = 0;
+                this.lastFpsTime = Date.now();
+                this.processingTimes = [];
+
+                // Background learning
+                this.backgroundSamples = [];
+                this.backgroundLearned = false;
+                this.learningFrames = 0;
+
+                // Optimized canvases
+                this.tempCanvas = document.createElement('canvas');
+                this.tempCtx = this.tempCanvas.getContext('2d');
+                this.smallCanvas = document.createElement('canvas');
+                this.smallCtx = this.smallCanvas.getContext('2d');
 
                 this.initializeEvents();
                 this.checkBackendConnection();
-                this.initializeSelfieSegmentation();
             }
 
-            async initializeSelfieSegmentation() {
-                try {
-                    console.log('Trying to initialize MediaPipe...');
+            initializeEvents() {
+                document.getElementById('startBtn').addEventListener('click', () => this.startCamera());
+                document.getElementById('recordBtn').addEventListener('click', () => this.startRecording());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stopRecording());
+                document.getElementById('generateBgBtn').addEventListener('click', () => this.generateBackground());
+                document.getElementById('useBgBtn').addEventListener('click', () => this.useGeneratedBackground());
+                document.getElementById('uploadBgBtn').addEventListener('click', () => {
+                    document.getElementById('bgUpload').click();
+                });
+                document.getElementById('bgUpload').addEventListener('change', (e) => this.handleBgUpload(e));
+                document.getElementById('downloadBtn').addEventListener('click', () => this.downloadVideo());
+                document.getElementById('newRecordingBtn').addEventListener('click', () => this.startNewRecording());
+                document.getElementById('resetBgBtn').addEventListener('click', () => this.resetBackground());
 
-                    // Check if SelfieSegmentation is available
-                    if (typeof SelfieSegmentation === 'undefined') {
-                        throw new Error('MediaPipe SelfieSegmentation not loaded');
-                    }
+                // Optimized slider controls
+                document.getElementById('thresholdSlider').addEventListener('input', (e) => {
+                    this.threshold = parseFloat(e.target.value);
+                    document.getElementById('thresholdValue').textContent = this.threshold;
+                });
 
-                    this.selfieSegmentation = new SelfieSegmentation({
-                        locateFile: (file) => {
-                            return `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`;
-                        }
-                    });
+                document.getElementById('qualitySlider').addEventListener('input', (e) => {
+                    this.processingQuality = parseInt(e.target.value);
+                    document.getElementById('qualityValue').textContent = this.processingQuality;
+                    this.updateProcessingSettings();
+                });
 
-                    this.selfieSegmentation.setOptions({
-                        modelSelection: 1,
-                        selfieMode: true,
-                    });
+                document.querySelectorAll('.prompt-chip').forEach(chip => {
+                    chip.addEventListener('click', (e) => this.selectPromptChip(e.target));
+                });
+            }
 
-                    this.selfieSegmentation.onResults((results) => {
-                        this.drawResults(results);
-                    });
-
-                    console.log('✅ MediaPipe initialized successfully');
-                    this.updateStatus('🤖 MediaPipe person detection ready!');
-
-                } catch (error) {
-                    console.error('MediaPipe failed:', error);
-                    console.log('🔄 Using fallback color-based background removal');
-                    this.selfieSegmentation = null;
-                    this.updateStatus('🔄 Using smart background detection (fallback mode)');
+            updateProcessingSettings() {
+                // Adjust processing parameters based on quality setting
+                switch (this.processingQuality) {
+                    case 1: // Fastest
+                        this.downsampleFactor = 4;
+                        this.frameSkip = 2;
+                        break;
+                    case 2: // Balanced
+                        this.downsampleFactor = 2;
+                        this.frameSkip = 1;
+                        break;
+                    case 3: // Quality
+                        this.downsampleFactor = 1.5;
+                        this.frameSkip = 0;
+                        break;
+                    case 4: // Best Quality
+                        this.downsampleFactor = 1;
+                        this.frameSkip = 0;
+                        break;
                 }
+            }
+
+            selectPromptChip(chip) {
+                document.querySelectorAll('.prompt-chip').forEach(c => c.classList.remove('selected'));
+                chip.classList.add('selected');
+                document.getElementById('backgroundPrompt').value = chip.dataset.prompt;
             }
 
             async checkBackendConnection() {
@@ -483,30 +602,6 @@ Examples:
                         <button onclick="location.reload()" class="btn">🔄 Retry Connection</button>
                     `;
                 }
-            }
-
-            initializeEvents() {
-                document.getElementById('startBtn').addEventListener('click', () => this.startCamera());
-                document.getElementById('recordBtn').addEventListener('click', () => this.startRecording());
-                document.getElementById('stopBtn').addEventListener('click', () => this.stopRecording());
-                document.getElementById('generateBgBtn').addEventListener('click', () => this.generateBackground());
-                document.getElementById('useBgBtn').addEventListener('click', () => this.useGeneratedBackground());
-                document.getElementById('uploadBgBtn').addEventListener('click', () => {
-                    document.getElementById('bgUpload').click();
-                });
-                document.getElementById('bgUpload').addEventListener('change', (e) => this.handleBgUpload(e));
-                document.getElementById('downloadBtn').addEventListener('click', () => this.downloadVideo());
-                document.getElementById('newRecordingBtn').addEventListener('click', () => this.startNewRecording());
-
-                document.querySelectorAll('.prompt-chip').forEach(chip => {
-                    chip.addEventListener('click', (e) => this.selectPromptChip(e.target));
-                });
-            }
-
-            selectPromptChip(chip) {
-                document.querySelectorAll('.prompt-chip').forEach(c => c.classList.remove('selected'));
-                chip.classList.add('selected');
-                document.getElementById('backgroundPrompt').value = chip.dataset.prompt;
             }
 
             async generateBackground() {
@@ -561,7 +656,8 @@ Examples:
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
                         this.backgroundImage = img;
-                        this.updateStatus('✅ Background loaded! Click "Start Camera" to begin recording');
+                        this.resetBackground();
+                        this.updateStatus('✅ Background loaded! Start camera and move around to learn your background');
                     };
                     img.onerror = () => {
                         this.updateStatus('❌ Failed to load background image');
@@ -574,7 +670,12 @@ Examples:
                 try {
                     this.updateStatus('📹 Starting camera...');
                     this.stream = await navigator.mediaDevices.getUserMedia({
-                        video: { width: 1280, height: 720, facingMode: 'user' },
+                        video: {
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 },
+                            facingMode: 'user',
+                            frameRate: { ideal: 30, max: 30 }
+                        },
                         audio: true
                     });
 
@@ -583,11 +684,21 @@ Examples:
                     this.video.onloadedmetadata = () => {
                         this.canvas.width = this.video.videoWidth;
                         this.canvas.height = this.video.videoHeight;
+
+                        // Setup processing canvases
+                        this.tempCanvas.width = this.canvas.width;
+                        this.tempCanvas.height = this.canvas.height;
+
+                        const smallWidth = Math.floor(this.canvas.width / this.downsampleFactor);
+                        const smallHeight = Math.floor(this.canvas.height / this.downsampleFactor);
+                        this.smallCanvas.width = smallWidth;
+                        this.smallCanvas.height = smallHeight;
+
                         this.startProcessing();
 
                         document.getElementById('startBtn').disabled = true;
                         document.getElementById('recordBtn').disabled = false;
-                        this.updateStatus('✅ Camera ready! You should see yourself with the background');
+                        this.updateStatus('✅ Camera ready! The app will learn your background automatically as you move');
                     };
                 } catch (error) {
                     console.error('Camera access failed:', error);
@@ -595,36 +706,50 @@ Examples:
                 }
             }
 
+            resetBackground() {
+                this.backgroundSamples = [];
+                this.backgroundLearned = false;
+                this.learningFrames = 0;
+                this.updateStatus('🔄 Background reset. Move around to let the app learn your background');
+            }
+
             startProcessing() {
-                const processFrame = async () => {
-                    if (this.video.readyState === this.video.HAVE_ENOUGH_DATA && !this.isProcessingFrame) {
-                        this.isProcessingFrame = true;
+                let lastFrameTime = 0;
 
-                        if (this.selfieSegmentation) {
-                            try {
-                                // Send frame to MediaPipe for processing
-                                await this.selfieSegmentation.send({ imageData: this.video });
-                            } catch (error) {
-                                console.error('MediaPipe processing failed:', error);
-                                // Fall back to basic processing if MediaPipe fails
-                                this.processVideoFrameBasic();
-                            }
-                        } else {
-                            // Use smart background removal if MediaPipe not available
-                            this.processVideoFrameBasic();
-                        }
-
-                        this.isProcessingFrame = false;
+                const processFrame = (currentTime) => {
+                    // Throttle frame rate for performance
+                    if (currentTime - lastFrameTime < 33) { // ~30 FPS max
+                        this.animationId = requestAnimationFrame(processFrame);
+                        return;
                     }
+                    lastFrameTime = currentTime;
+
+                    if (this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
+                        // Skip frames if needed for performance
+                        this.currentFrame++;
+                        if (this.currentFrame % (this.frameSkip + 1) === 0) {
+                            const startTime = performance.now();
+                            this.processVideoFrameOptimized();
+                            const endTime = performance.now();
+
+                            // Track performance
+                            this.processingTimes.push(endTime - startTime);
+                            if (this.processingTimes.length > 30) {
+                                this.processingTimes.shift();
+                            }
+
+                            this.updatePerformanceStats();
+                        }
+                    }
+
                     this.animationId = requestAnimationFrame(processFrame);
                 };
-                processFrame();
+
+                this.animationId = requestAnimationFrame(processFrame);
             }
 
-            drawResults(results) {
-                console.log('MediaPipe results received:', results);
-
-                // Clear canvas
+            processVideoFrameOptimized() {
+                // Clear main canvas
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
                 // Draw background first
@@ -634,196 +759,154 @@ Examples:
                     this.drawDefaultBackground();
                 }
 
-                // Check if we have segmentation data
-                if (!results.segmentationMask) {
-                    console.log('No segmentation mask, falling back to basic processing');
-                    this.processVideoFrameBasic();
-                    return;
+                // Process at reduced resolution for speed
+                const smallWidth = this.smallCanvas.width;
+                const smallHeight = this.smallCanvas.height;
+
+                // Draw video to small canvas (mirrored)
+                this.smallCtx.clearRect(0, 0, smallWidth, smallHeight);
+                this.smallCtx.save();
+                this.smallCtx.scale(-1, 1);
+                this.smallCtx.translate(-smallWidth, 0);
+                this.smallCtx.drawImage(this.video, 0, 0, smallWidth, smallHeight);
+                this.smallCtx.restore();
+
+                // Learn background if not yet learned
+                if (!this.backgroundLearned && this.learningFrames < 30) {
+                    this.learnBackground();
                 }
 
-                // Create temporary canvas for processing
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = this.canvas.width;
-                tempCanvas.height = this.canvas.height;
-                const tempCtx = tempCanvas.getContext('2d');
+                // Apply fast background removal
+                this.removeBackgroundFast();
 
-                // Draw video frame (mirrored)
-                tempCtx.save();
-                tempCtx.scale(-1, 1);
-                tempCtx.translate(-tempCanvas.width, 0);
-                tempCtx.drawImage(this.video, 0, 0, tempCanvas.width, tempCanvas.height);
-                tempCtx.restore();
-
-                // Apply MediaPipe segmentation mask
-                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-                const data = imageData.data;
-                const mask = results.segmentationMask;
-
-                console.log('Applying segmentation mask, mask length:', mask.length, 'image data length:', data.length);
-
-                // Process each pixel using the segmentation mask
-                const maskWidth = results.segmentationMask.width || tempCanvas.width;
-                const maskHeight = results.segmentationMask.height || tempCanvas.height;
-
-                for (let y = 0; y < tempCanvas.height; y++) {
-                    for (let x = 0; x < tempCanvas.width; x++) {
-                        const pixelIndex = y * tempCanvas.width + x;
-                        const imageIndex = pixelIndex * 4;
-
-                        // Scale mask coordinates if needed
-                        const maskX = Math.floor((x / tempCanvas.width) * maskWidth);
-                        const maskY = Math.floor((y / tempCanvas.height) * maskHeight);
-                        const maskIndex = maskY * maskWidth + maskX;
-
-                        // Get mask value (0 = background, 1 = person)
-                        const maskValue = mask[maskIndex] || 0;
-
-                        // If mask value is low (background), make pixel transparent
-                        if (maskValue < 0.5) {
-                            data[imageIndex + 3] = 0; // Set alpha to 0 (transparent)
-                        }
-                    }
-                }
-
-                // Apply the processed image data back
-                tempCtx.putImageData(imageData, 0, 0);
-
-                // Draw the person (with background removed) onto the main canvas
-                this.ctx.drawImage(tempCanvas, 0, 0);
-
-                // Show the processed canvas
+                // Show the result
                 this.canvas.style.display = 'block';
                 this.video.style.display = 'none';
-
-                console.log('MediaPipe processing complete');
             }
 
-            processVideoFrameBasic() {
-                // Smart background removal using color analysis
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            learnBackground() {
+                const imageData = this.smallCtx.getImageData(0, 0, this.smallCanvas.width, this.smallCanvas.height);
+                this.backgroundSamples.push(new Uint8ClampedArray(imageData.data));
+                this.learningFrames++;
 
-                // Draw background first
-                if (this.backgroundImage) {
-                    this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
-                } else {
-                    this.drawDefaultBackground();
+                if (this.learningFrames >= 30) {
+                    this.computeBackgroundModel();
+                    this.backgroundLearned = true;
+                    this.updateStatus('✅ Background learned! Background removal active');
                 }
+            }
 
-                // Create temporary canvas for processing
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = this.canvas.width;
-                tempCanvas.height = this.canvas.height;
-                const tempCtx = tempCanvas.getContext('2d');
+            computeBackgroundModel() {
+                if (this.backgroundSamples.length === 0) return;
 
-                // Draw mirrored video
-                tempCtx.save();
-                tempCtx.scale(-1, 1);
-                tempCtx.translate(-tempCanvas.width, 0);
-                tempCtx.drawImage(this.video, 0, 0, tempCanvas.width, tempCanvas.height);
-                tempCtx.restore();
+                const width = this.smallCanvas.width;
+                const height = this.smallCanvas.height;
+                const totalPixels = width * height;
 
-                // Get image data for smart processing
-                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                // Create median background
+                this.backgroundModel = new Uint8ClampedArray(totalPixels * 4);
+
+                for (let i = 0; i < totalPixels * 4; i += 4) {
+                    const reds = [], greens = [], blues = [];
+
+                    for (const sample of this.backgroundSamples) {
+                        reds.push(sample[i]);
+                        greens.push(sample[i + 1]);
+                        blues.push(sample[i + 2]);
+                    }
+
+                    // Use median for robustness
+                    reds.sort((a, b) => a - b);
+                    greens.sort((a, b) => a - b);
+                    blues.sort((a, b) => a - b);
+
+                    const mid = Math.floor(reds.length / 2);
+                    this.backgroundModel[i] = reds[mid];
+                    this.backgroundModel[i + 1] = greens[mid];
+                    this.backgroundModel[i + 2] = blues[mid];
+                    this.backgroundModel[i + 3] = 255;
+                }
+            }
+
+            removeBackgroundFast() {
+                const imageData = this.smallCtx.getImageData(0, 0, this.smallCanvas.width, this.smallCanvas.height);
                 const data = imageData.data;
+                const width = this.smallCanvas.width;
+                const height = this.smallCanvas.height;
 
-                // Smart background removal - detect person vs background
+                // Fast background removal
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i];
                     const g = data[i + 1];
                     const b = data[i + 2];
 
-                    const pixelIndex = i / 4;
-                    const x = pixelIndex % tempCanvas.width;
-                    const y = Math.floor(pixelIndex / tempCanvas.width);
+                    let isPerson = false;
 
-                    // Check if this looks like a person (skin tones, clothing)
-                    const isPerson = this.isPersonPixel(r, g, b, x, y, tempCanvas.width, tempCanvas.height);
+                    if (this.backgroundLearned && this.backgroundModel) {
+                        // Compare with learned background
+                        const bgR = this.backgroundModel[i];
+                        const bgG = this.backgroundModel[i + 1];
+                        const bgB = this.backgroundModel[i + 2];
 
-                    if (!isPerson) {
-                        // Make background pixels transparent
-                        data[i + 3] = 0; // Alpha = 0 (transparent)
+                        const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+                        isPerson = diff > (this.threshold * 300);
+                    } else {
+                        // Fast person detection fallback
+                        isPerson = this.fastPersonDetection(r, g, b);
+                    }
+
+                    // Set alpha based on detection
+                    data[i + 3] = isPerson ? 255 : 0;
+                }
+
+                // Put processed data back to small canvas
+                this.smallCtx.putImageData(imageData, 0, 0);
+
+                // Scale up to main canvas with smoothing
+                this.ctx.imageSmoothingEnabled = true;
+                this.ctx.imageSmoothingQuality = 'high';
+                this.ctx.drawImage(this.smallCanvas, 0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            fastPersonDetection(r, g, b) {
+                // Quick skin tone detection
+                if (r > 95 && g > 40 && b > 20 && r > g && r > b &&
+                    Math.max(r, g, b) - Math.min(r, g, b) > 15) {
+                    return true;
+                }
+
+                // Quick clothing detection (non-background colors)
+                const gray = (r + g + b) / 3;
+                if (gray > 30 && gray < 220) {
+                    // Colored clothing
+                    if (Math.max(r, g, b) - Math.min(r, g, b) > 25) {
+                        return true;
+                    }
+                    // Dark clothing
+                    if (gray < 80) {
+                        return true;
                     }
                 }
 
-                // Apply the processed data
-                tempCtx.putImageData(imageData, 0, 0);
-
-                // Draw the person (without background) onto main canvas
-                this.ctx.drawImage(tempCanvas, 0, 0);
-
-                this.canvas.style.display = 'block';
-                this.video.style.display = 'none';
-            }
-
-            isPersonPixel(r, g, b, x, y, width, height) {
-                // Multiple detection methods
-
-                // 1. Skin tone detection
-                const isSkin = this.isSkinTone(r, g, b);
-
-                // 2. Common clothing colors
-                const isClothing = this.isClothingColor(r, g, b);
-
-                // 3. Center area weighting (person usually in center)
-                const centerX = width / 2;
-                const centerY = height / 2;
-                const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
-                const maxDistance = Math.min(width, height) * 0.4;
-                const isInCenterArea = distanceFromCenter <= maxDistance;
-
-                // 4. Hair colors
-                const isHair = this.isHairColor(r, g, b);
-
-                // Combine all detection methods
-                return (isSkin || isClothing || isHair) && isInCenterArea;
-            }
-
-            isSkinTone(r, g, b) {
-                // Enhanced skin tone detection
-                return (
-                    (r > 95 && g > 40 && b > 20) &&
-                    (Math.max(r, g, b) - Math.min(r, g, b) > 15) &&
-                    (Math.abs(r - g) > 15) &&
-                    (r > g && r > b)
-                );
-            }
-
-            isClothingColor(r, g, b) {
-                // Detect common clothing colors
-                const gray = (r + g + b) / 3;
-
-                // Gray clothing (like your shirt)
-                if (Math.abs(r - gray) < 30 && Math.abs(g - gray) < 30 && Math.abs(b - gray) < 30) {
-                    return gray > 50 && gray < 200; // Not pure black or white
-                }
-
-                // Blue clothing
-                if (b > r + 20 && b > g + 20) {
-                    return true;
-                }
-
-                // Dark clothing
-                if (gray < 80) {
-                    return true;
-                }
-
                 return false;
             }
 
-            isHairColor(r, g, b) {
-                // Detect hair colors (brown, black, blonde, etc.)
-                const avg = (r + g + b) / 3;
+            updatePerformanceStats() {
+                this.frameCount++;
+                const now = Date.now();
 
-                // Dark hair
-                if (avg < 70) return true;
+                if (now - this.lastFpsTime >= 1000) {
+                    this.fps = this.frameCount;
+                    this.frameCount = 0;
+                    this.lastFpsTime = now;
 
-                // Brown hair
-                if (r > 100 && r > g && r > b && g > 50) return true;
+                    document.getElementById('fpsCounter').textContent = this.fps;
 
-                // Blonde hair
-                if (r > 150 && g > 120 && b > 80) return true;
-
-                return false;
+                    if (this.processingTimes.length > 0) {
+                        const avgTime = this.processingTimes.reduce((a, b) => a + b, 0) / this.processingTimes.length;
+                        document.getElementById('processTime').textContent = Math.round(avgTime) + 'ms';
+                    }
+                }
             }
 
             drawDefaultBackground() {
@@ -842,6 +925,7 @@ Examples:
                         const img = new Image();
                         img.onload = () => {
                             this.backgroundImage = img;
+                            this.resetBackground();
                             this.updateStatus('✅ Custom background uploaded and ready');
                         };
                         img.src = e.target.result;
@@ -859,7 +943,8 @@ Examples:
                     }
 
                     this.mediaRecorder = new MediaRecorder(canvasStream, {
-                        mimeType: 'video/webm;codecs=vp9'
+                        mimeType: 'video/webm;codecs=vp9',
+                        videoBitsPerSecond: 2500000 // 2.5 Mbps for good quality
                     });
 
                     this.recordedChunks = [];
@@ -881,7 +966,7 @@ Examples:
                     document.getElementById('timer').style.display = 'block';
 
                     this.startTimer();
-                    this.updateStatus('🔴 Recording in progress... Stay centered in frame!');
+                    this.updateStatus('🔴 Recording in progress... Move naturally!');
 
                     // Auto-stop after 10 seconds
                     setTimeout(() => {
